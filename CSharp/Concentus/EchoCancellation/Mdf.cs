@@ -292,6 +292,25 @@ namespace Concentus.EchoCancellation
             if (farEnd.Length < frameSize || nearEnd.Length < frameSize || output.Length < frameSize)
                 throw new ArgumentException("Input/output buffers must be at least frame_size samples");
 
+            // WORKAROUND: Check if far-end signal has any power
+            // If not, bypass AEC entirely as it has a bug that destroys near-end speech
+            // when there's no echo to cancel.
+            double farEndPower = 0;
+            for (i = 0; i < frameSize; i++)
+            {
+                double val = farEnd[i];
+                farEndPower += val * val;
+            }
+            
+            // If far-end power is negligible, pass near-end through unchanged
+            // This preserves near-end speech quality when speakers are silent
+            if (farEndPower < 1e6) // Threshold: ~sqrt(1e6/128) = ~88 RMS per sample for 128-sample frame
+            {
+                nearEnd.Slice(0, frameSize).CopyTo(output);
+                st.frame_count++;
+                return;
+            }
+
             // Apply DC notch filter to inputs
             Span<short> farEndFiltered = stackalloc short[frameSize];
             Span<short> nearEndFiltered = stackalloc short[frameSize];
