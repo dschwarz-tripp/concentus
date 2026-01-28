@@ -87,7 +87,7 @@ namespace Concentus
         public static IAcousticEchoCanceller CreateMdf(int sampleRate)
         {
             const int defaultFrameSize = 128;
-            
+
             // Select recommended filter length based on sample rate
             // Must be multiple of frame size (128)
             int filterLength;
@@ -101,7 +101,7 @@ namespace Concentus
                 filterLength = 9600;      // 200 ms (75 blocks)
             else
                 throw new ArgumentException("Sample rate must be 8000, 16000, 24000, or 48000 Hz", nameof(sampleRate));
-            
+
             return new SpeexEchoCanceller(sampleRate, defaultFrameSize, filterLength);
         }
     }

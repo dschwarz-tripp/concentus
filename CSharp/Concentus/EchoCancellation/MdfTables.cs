@@ -49,20 +49,20 @@ namespace Concentus.EchoCancellation
         internal const float MIN_LEAK = 0.005f;     // Minimum leak estimate
         internal const float DEFAULT_LEAK = 0.25f;   // Default/starting leak
         internal const float LEAK_ESTIMATE_TIME = 3.0f; // Time constant for leak adaptation (seconds)
-        
+
         // Proportionate NLMS parameters
         internal const float MIN_PROP_COEF = 0.01f;  // Minimum proportionate coefficient
         internal const float PROP_SMOOTH = 0.1f;      // Smoothing factor for proportionate weights
-        
+
         // Residual echo suppression
         internal const float RES_ECHO_SMOOTH = 0.6f;    // Smoothing for residual echo estimate
         internal const float MIN_GAIN = 0.01f;          // Minimum suppression gain (-40 dB)
         internal const float MIN_GAIN_ACTIVE = 0.18f;   // Minimum gain during speech (-15 dB)
-        
+
         // Power spectrum regularization
         internal const float MIN_POWER = 1e-10f;      // Minimum power to avoid division by zero
         internal const int MIN_POWER_Q15 = 1;         // Minimum power in fixed-point
-        
+
         /// <summary>
         /// Generate half-Hanning window for overlap-add processing
         /// </summary>
@@ -80,7 +80,7 @@ namespace Concentus.EchoCancellation
             }
             return window;
         }
-        
+
         /// <summary>
         /// Generate precomputed scaling factors for different FFT sizes
         /// </summary>

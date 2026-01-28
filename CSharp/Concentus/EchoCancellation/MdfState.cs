@@ -47,35 +47,35 @@ namespace Concentus.EchoCancellation
         internal int frame_size;        // Frame size in samples (64-256)
         internal int filter_length;     // Filter length in samples (tail length)
         internal int nb_blocks;         // Number of filter blocks (filter_length / frame_size)
-        
+
         // FFT state
         internal FFTState fft_table;    // FFT state for 2*frame_size
         internal int fft_size;          // FFT size (2*frame_size)
         internal short[] window;        // Analysis window (frame_size samples, Q15)
-        
+
         // Buffers - Input/output ring buffers
         internal int[] x;               // Far-end (speaker) history: nb_blocks * frame_size samples
         internal int[] y;               // Near-end (microphone) history: frame_size samples
         internal int[] last_y;          // Last near-end frame (for residual echo)
         internal int[] e;               // Error signal (output) buffer: frame_size samples
-        
+
         // Frequency domain buffers (size = fft_size + 2 for complex)
         internal int[] X;               // Far-end spectrum (2*fft_size for real+imag)
         internal int[] Y;               // Near-end spectrum
         internal int[] E;               // Error spectrum
         internal int[] PHI;             // Foreground filter output spectrum
-        
+
         // Adaptive filter coefficients (frequency domain)
         internal int[] W;               // Foreground filter weights: (fft_size/2 + 1) * nb_blocks
         internal int[] foreground;      // Foreground filter work buffer
-        
+
         // Background filter for adaptation (shadow filter)
         internal int[] Wtmp;            // Background filter weights (same size as W)
         internal int Davg1;             // Foreground divergence metric
         internal int Davg2;             // Background divergence metric
         internal int Dvar1;             // Foreground variance
         internal int Dvar2;             // Background variance
-        
+
         // Power estimates (size = fft_size/2 + 1)
         internal int[] power;           // Input power spectrum
         internal int[] power_1;         // Previous input power (for smoothing)
@@ -84,7 +84,7 @@ namespace Concentus.EchoCancellation
         internal int[] Xf;              // Near-end power spectrum
         internal int[] Eh;              // Echo power estimate
         internal int[] Yh;              // Output power estimate
-        
+
         // Adaptation state
         internal int[] prop;            // Proportionate weights for NLMS
         internal float[] wtmp2;         // Temporary weight storage (for background filter)
@@ -93,18 +93,18 @@ namespace Concentus.EchoCancellation
         internal int adapted;           // Boolean: has filter adapted?
         internal int saturated;         // Boolean: is signal saturated?
         internal int screwed_up;        // Counter for divergence detection
-        
+
         // DC notch filter state (IIR highpass)
         internal int[] notch_mem;       // Notch filter memory: 2 samples per channel
-        
+
         // Residual echo suppression state
         internal int[] residual_echo;   // Residual echo power spectrum
         internal int[] echo_noise;      // Smoothed residual echo estimate
         internal float[] gain;          // Suppression gain per frequency bin
-        
+
         // Ring buffer pointers
         internal int x_insert_pos;      // Write position in x buffer
-        
+
         // Statistics
         internal long frame_count;      // Number of frames processed
     }
