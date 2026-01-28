@@ -301,7 +301,7 @@ namespace Concentus.EchoCancellation
                 double val = farEnd[i];
                 farEndPower += val * val;
             }
-            
+
             // If far-end power is negligible, pass near-end through unchanged
             // This preserves near-end speech quality when speakers are silent
             if (farEndPower < 1e6) // Threshold: ~sqrt(1e6/128) = ~88 RMS per sample for 128-sample frame
