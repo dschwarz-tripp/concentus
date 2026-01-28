@@ -148,16 +148,16 @@ namespace Concentus.EchoCancellation
                     // prop[i*N+j] = (delta + |W[i][j]|) / (delta*M*N + ||W||_1)
                     // Compute delta = 0.01 * max_sum
                     int delta = Inlines.MULT16_32_Q15((short)(0.01f * 32767), max_sum);
-                    
+
                     // Compute denominator: delta*M*N + max_sum
                     // Scale factor for delta*M*N to prevent overflow
                     int scaledMN = Math.Min(M * N, 32767); // Prevent overflow
                     int denom = Inlines.ADD32(Inlines.MULT16_32_Q15((short)(0.01f * 32767), Inlines.MULT16_32_Q15((short)scaledMN, max_sum)), max_sum);
-                    
+
                     // Prevent division by zero
                     if (denom < 1)
                         denom = 1;
-                    
+
                     prop[block_offset + j] = Inlines.DIV32(Inlines.SHL32(tmp + delta, 15), denom);
                 }
             }
