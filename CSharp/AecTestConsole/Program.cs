@@ -148,6 +148,9 @@ namespace AecTestConsole
             TestRealAudioFile("../../AudioData/Blunderbuss.raw", 48000);
             TestRealAudioFile("../../AudioData/Ichiba.raw", 48000);
             TestRealAudioFile("../../AudioData/Jurgen.raw", 48000);
+
+            // Test near-end speech preservation (no echo scenario)
+            TestNearEndOnly.Run();
         }
 
         static void TestRealAudioFile(string filePath, int sampleRate, int channels = 1)
@@ -185,6 +188,10 @@ namespace AecTestConsole
                     double totalOutputPower = 0;
                     int activeFrames = 0;
 
+                    // Buffers to save output files
+                    var nearEndBuffer = new System.Collections.Generic.List<short>();
+                    var processedBuffer = new System.Collections.Generic.List<short>();
+
                     for (int frame = 0; frame < numFrames; frame++)
                     {
                         int offset = frame * frameSize;
@@ -206,6 +213,10 @@ namespace AecTestConsole
                         }
 
                         aec.Process(nearEnd, farEnd, output);
+
+                        // Save audio for output files
+                        nearEndBuffer.AddRange(nearEnd);
+                        processedBuffer.AddRange(output);
 
                         // Skip adaptation period and measure ERLE
                         if (frame >= 50 && frame < numFrames - 20)
@@ -239,6 +250,17 @@ namespace AecTestConsole
                     {
                         Console.WriteLine($"  ⚠ Not enough active frames to measure (processed {numFrames} frames)");
                     }
+
+                    // Save output WAV files
+                    string baseName = Path.GetFileNameWithoutExtension(filePath);
+                    string nearEndFile = $"{baseName}_nearend.wav";
+                    string processedFile = $"{baseName}_processed.wav";
+
+                    SaveWavFile(nearEndFile, nearEndBuffer.ToArray(), sampleRate);
+                    SaveWavFile(processedFile, processedBuffer.ToArray(), sampleRate);
+
+                    Console.WriteLine($"  Saved: {nearEndFile}");
+                    Console.WriteLine($"  Saved: {processedFile}");
                 }
             }
             catch (Exception ex)
@@ -273,6 +295,38 @@ namespace AecTestConsole
             }
 
             return samples;
+        }
+
+        static void SaveWavFile(string filename, short[] samples, int sampleRate)
+        {
+            using (var stream = new FileStream(filename, FileMode.Create))
+            using (var writer = new BinaryWriter(stream))
+            {
+                // RIFF header
+                writer.Write(System.Text.Encoding.ASCII.GetBytes("RIFF"));
+                writer.Write(36 + samples.Length * 2); // File size - 8
+                writer.Write(System.Text.Encoding.ASCII.GetBytes("WAVE"));
+
+                // fmt chunk
+                writer.Write(System.Text.Encoding.ASCII.GetBytes("fmt "));
+                writer.Write(16); // Chunk size
+                writer.Write((short)1); // Audio format (PCM)
+                writer.Write((short)1); // Channels (mono)
+                writer.Write(sampleRate); // Sample rate
+                writer.Write(sampleRate * 2); // Byte rate
+                writer.Write((short)2); // Block align
+                writer.Write((short)16); // Bits per sample
+
+                // data chunk
+                writer.Write(System.Text.Encoding.ASCII.GetBytes("data"));
+                writer.Write(samples.Length * 2); // Data size
+
+                // Write audio data
+                foreach (short sample in samples)
+                {
+                    writer.Write(sample);
+                }
+            }
         }
     }
 }

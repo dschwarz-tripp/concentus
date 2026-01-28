@@ -238,3 +238,5 @@ _Pvt_Extensions
 /Java/ContentusTestConsole/ContentusTestConsole/target/
 /Java/ContentusTestConsole/ConcentusTestConsole/target/
 /Java/ConcentusTestConsole/target/
+CSharp/AecTestConsole/*.wav
+CSharp/AecLiveTest/*.wav
