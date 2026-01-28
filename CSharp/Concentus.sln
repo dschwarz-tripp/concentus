@@ -14,8 +14,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnitTests", "UnitTests\Unit
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Concentus", "Concentus\Concentus.csproj", "{C94999F9-01B9-464A-9DA6-8FD57020AA85}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AecLiveTest", "AecLiveTest\AecLiveTest.csproj", "{B89812D9-6D67-4890-8995-71D17BB1CD25}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
