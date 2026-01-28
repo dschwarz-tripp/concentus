@@ -66,6 +66,11 @@ namespace AecTestConsole
                         double inputPower = ComputePower(nearEnd);
                         double outputPower = ComputePower(output);
 
+                        if (frame == 20 || frame == 50)
+                        {
+                            Console.WriteLine($"  Frame {frame}: inputPower={inputPower:E2}, outputPower={outputPower:E2}");
+                        }
+
                         if (inputPower > 1e6) // Active speech frame
                         {
                             totalInputPower += inputPower;
