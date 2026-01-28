@@ -143,9 +143,14 @@ namespace AecTestConsole
             TestRealAudioFile("../../AudioData/16Khz Mono.raw", 16000);
             TestRealAudioFile("../../AudioData/24Khz Mono.raw", 24000);
             TestRealAudioFile("../../AudioData/48Khz Mono.raw", 48000);
+            
+            Console.WriteLine("\n--- Music File Tests (48 kHz Mono) ---");
+            TestRealAudioFile("../../AudioData/Blunderbuss.raw", 48000);
+            TestRealAudioFile("../../AudioData/Ichiba.raw", 48000);
+            TestRealAudioFile("../../AudioData/Jurgen.raw", 48000);
         }
 
-        static void TestRealAudioFile(string filePath, int sampleRate)
+        static void TestRealAudioFile(string filePath, int sampleRate, int channels = 1)
         {
             if (!File.Exists(filePath))
             {
@@ -162,7 +167,9 @@ namespace AecTestConsole
                 int frameSize = 128;
                 using (var aec = AecFactory.CreateMdf(sampleRate))
                 {
-                    int numFrames = Math.Min(audioSamples.Length / frameSize, 300);
+                    // For stereo, we need to deinterleave or just use left channel
+                    int totalSamples = channels == 1 ? audioSamples.Length : audioSamples.Length / channels;
+                    int numFrames = Math.Min(totalSamples / frameSize, 300);
 
                     if (numFrames < 100)
                     {
