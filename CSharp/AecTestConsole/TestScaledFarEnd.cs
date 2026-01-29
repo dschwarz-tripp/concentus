@@ -126,10 +126,10 @@ namespace AecTestConsole
                         {
                             double phase = 2.0 * Math.PI * 1000.0 * (frame * frameSize + i) / 16000.0;
                             double sample = 4000.0 * Math.Sin(phase); // Quarter amplitude
-                            farEnd[i] = (short)sample;
+                            farEnd[i] = (short)(sample * 0.5); // 25% amplitude
 
                             // Echo at 50% of far-end (so 12.5% of max amplitude)
-                            nearEnd[i] = (short)(sample * 0.5);
+                            nearEnd[i] = (short)sample;
                         }
 
                         aec.Process(nearEnd, farEnd, output);

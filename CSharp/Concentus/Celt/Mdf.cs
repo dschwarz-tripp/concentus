@@ -359,24 +359,6 @@ namespace Concentus.Celt
             if (farEnd.Length < frameSize || nearEnd.Length < frameSize || output.Length < frameSize)
                 throw new ArgumentException("Input/output buffers must be at least frame_size samples");
 
-            // WORKAROUND: Check if far-end signal has any power
-            // If not, bypass AEC entirely as it has a bug that destroys near-end speech
-            // when there's no echo to cancel.
-            double farEndPower = 0;
-            for (i = 0; i < frameSize; i++)
-            {
-                double val = farEnd[i];
-                farEndPower += val * val;
-            }
-
-            // If far-end power is negligible, pass near-end through unchanged
-            // This preserves near-end speech quality when speakers are silent
-            if (farEndPower < 1e6) // Threshold: ~sqrt(1e6/128) = ~88 RMS per sample for 128-sample frame
-            {
-                nearEnd.Slice(0, frameSize).CopyTo(output);
-                st.frame_count++;
-                return;
-            }
 
             // Apply DC notch filter to inputs
             Span<short> farEndFiltered = stackalloc short[frameSize];
@@ -462,9 +444,6 @@ namespace Concentus.Celt
             for (i = 0; i < st.fft_size; i++)
                 st.E[i] = Inlines.SUB32(st.Y[i], st.PHI[i]);
 
-            // Inverse FFT to get time-domain error
-            KissFFT.opus_ifft(st.fft_table, st.E, st.e);
-
             // Store echo estimate for residual echo computation (PHI in time domain)
             // We need to inverse FFT the PHI to get time-domain echo estimate
             int[] phiTime = new int[st.fft_size * 2];
@@ -472,8 +451,11 @@ namespace Concentus.Celt
             for (i = 0; i < frameSize; i++)
                 st.last_y[i] = phiTime[2 * i]; // Take real part only
 
-            // Compute and apply residual echo suppression
+            // Compute and apply residual echo suppression (modifies st.E)
             apply_residual_echo_suppression(st);
+
+            // Inverse FFT to get time-domain error
+            KissFFT.opus_ifft(st.fft_table, st.E, st.e);
 
             // Extract output with suppression (scale back from Q23 to Q0)
             for (i = 0; i < frameSize; i++)
@@ -547,6 +529,14 @@ namespace Concentus.Celt
                 gain = Math.Max(gain, MdfTables.MIN_GAIN);
 
                 st.gain[i] = gain;
+            }
+
+            // Apply suppression gain to error spectrum (frequency domain)
+            for (i = 0; i < N; i++)
+            {
+                st.E[2 * i] = (int)(st.E[2 * i] * st.gain[i]);
+                if (i < N - 1)
+                    st.E[2 * i + 1] = (int)(st.E[2 * i + 1] * st.gain[i]);
             }
         }
 
