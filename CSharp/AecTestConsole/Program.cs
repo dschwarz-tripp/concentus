@@ -155,6 +155,20 @@ namespace AecTestConsole
 
             // Test scaled far-end scenarios (distant speaker)
             TestScaledFarEnd.Run();
+
+            // Live audio test (macOS only)
+            Console.WriteLine("\n--- Live Audio Test ---");
+            Console.WriteLine("This test uses real speakers and microphone.");
+            Console.Write("Run live audio test? (y/n): ");
+            string response = Console.ReadLine();
+            if (response?.ToLower() == "y")
+            {
+                TestLiveAudio.Run();
+            }
+            else
+            {
+                Console.WriteLine("Skipping live audio test.");
+            }
         }
 
         static void TestRealAudioFile(string filePath, int sampleRate, int channels = 1)
