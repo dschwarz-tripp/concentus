@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using Concentus;
 
@@ -28,6 +29,9 @@ namespace AecTestConsole
 
             Console.WriteLine($"Testing with: {Path.GetFileName(filePath)}");
 
+            var totalStopwatch = Stopwatch.StartNew();
+            long totalProcessingTicks = 0;
+
             byte[] fileBytes = File.ReadAllBytes(filePath);
             short[] audioSamples = BytesToShorts(fileBytes);
 
@@ -55,7 +59,10 @@ namespace AecTestConsole
                     // Far-end is silent (no speaker output)
                     Array.Clear(farEnd, 0, frameSize);
 
+                    var frameStopwatch = Stopwatch.StartNew();
                     aec.Process(nearEnd, farEnd, output);
+                    frameStopwatch.Stop();
+                    totalProcessingTicks += frameStopwatch.ElapsedTicks;
 
                     nearEndBuffer.AddRange(nearEnd);
                     outputBuffer.AddRange(output);
@@ -83,6 +90,11 @@ namespace AecTestConsole
                 // Calculate signal preservation ratio
                 if (activeFrames > 0)
                 {
+                    totalStopwatch.Stop();
+                    double avgProcessingTimeMs = (totalProcessingTicks * 1000.0) / (Stopwatch.Frequency * numFrames);
+                    double audioLengthMs = (numFrames * frameSize * 1000.0) / sampleRate;
+                    double realTimeFactor = audioLengthMs / totalStopwatch.Elapsed.TotalMilliseconds;
+
                     double avgInputPower = totalInputPower / activeFrames;
                     double avgOutputPower = totalOutputPower / activeFrames;
                     double preservationRatio = avgOutputPower / avgInputPower;
@@ -92,6 +104,8 @@ namespace AecTestConsole
                     Console.WriteLine($"Input Power: {avgInputPower:E2}");
                     Console.WriteLine($"Output Power: {avgOutputPower:E2}");
                     Console.WriteLine($"Signal Preservation: {preservationDb:F2} dB (ratio: {preservationRatio:F3})");
+                    Console.WriteLine($"Processing Time: {avgProcessingTimeMs:F3} ms/frame ({totalStopwatch.Elapsed.TotalMilliseconds:F1} ms total)");
+                    Console.WriteLine($"Real-Time Factor: {realTimeFactor:F2}x (audio length: {audioLengthMs:F1} ms)");
 
                     if (preservationDb > -3.0) // Should preserve at least 70% of power
                     {

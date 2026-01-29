@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using Concentus;
 
@@ -28,11 +29,17 @@ namespace AecTestConsole
             // Test 3: Scaled far-end with real audio
             TestScaledRealAudio("../../AudioData/16Khz Mono.raw", 16000, 0.3);
             TestScaledRealAudio("../../AudioData/48Khz Mono.raw", 48000, 0.3);
+
+            // Test 4: Sudden echo onset/offset to test adaptation
+            TestSuddenEchoOnset("../../AudioData/16Khz Mono.raw", 16000);
+            TestSuddenEchoOnset("../../AudioData/48Khz Mono.raw", 48000);
         }
 
         private static void TestScaledSynthetic()
         {
             Console.WriteLine("Test: Scaled Far-End - 50% Gain (Synthetic)");
+            var totalStopwatch = Stopwatch.StartNew();
+            long totalProcessingTicks = 0;
             try
             {
                 using (var aec = AecFactory.CreateMdf(16000, 128, 2432))
@@ -61,7 +68,10 @@ namespace AecTestConsole
                             nearEnd[i] = (short)(sample * 0.5);
                         }
 
+                        var frameStopwatch = Stopwatch.StartNew();
                         aec.Process(nearEnd, farEnd, output);
+                        frameStopwatch.Stop();
+                        totalProcessingTicks += frameStopwatch.ElapsedTicks;
 
                         // Measure after adaptation period
                         if (frame >= 30 && frame < numFrames - 10)
@@ -78,6 +88,11 @@ namespace AecTestConsole
                         }
                     }
 
+                    totalStopwatch.Stop();
+                    double avgProcessingTimeMs = (totalProcessingTicks * 1000.0) / (Stopwatch.Frequency * numFrames);
+                    double audioLengthMs = (numFrames * frameSize * 1000.0) / 16000.0;
+                    double realTimeFactor = audioLengthMs / totalStopwatch.Elapsed.TotalMilliseconds;
+
                     if (activeFrames > 0)
                     {
                         double avgEchoPower = totalEchoPower / activeFrames;
@@ -87,6 +102,9 @@ namespace AecTestConsole
                         Console.WriteLine($"  Far-End Gain: 50% (scaled)");
                         Console.WriteLine($"  Echo Level: 25% of max amplitude");
                         Console.WriteLine($"  ERLE: {erle:F2} dB");
+
+                        Console.WriteLine($"  Processing Time: {avgProcessingTimeMs:F3} ms/frame");
+                        Console.WriteLine($"  Real-Time Factor: {realTimeFactor:F2}x");
 
                         if (erle > 10.0)
                             Console.WriteLine($"  ✓ PASSED (ERLE > 10 dB with scaled far-end)");
@@ -104,6 +122,8 @@ namespace AecTestConsole
         private static void TestVeryScaledSynthetic()
         {
             Console.WriteLine("\nTest: Very Scaled Far-End - 25% Gain (Synthetic)");
+            var totalStopwatch = Stopwatch.StartNew();
+            long totalProcessingTicks = 0;
             try
             {
                 using (var aec = AecFactory.CreateMdf(16000, 128, 2432))
@@ -132,7 +152,10 @@ namespace AecTestConsole
                             nearEnd[i] = (short)sample;
                         }
 
+                        var frameStopwatch = Stopwatch.StartNew();
                         aec.Process(nearEnd, farEnd, output);
+                        frameStopwatch.Stop();
+                        totalProcessingTicks += frameStopwatch.ElapsedTicks;
 
                         // Measure after adaptation period
                         if (frame >= 30 && frame < numFrames - 10)
@@ -149,6 +172,11 @@ namespace AecTestConsole
                         }
                     }
 
+                    totalStopwatch.Stop();
+                    double avgProcessingTimeMs = (totalProcessingTicks * 1000.0) / (Stopwatch.Frequency * numFrames);
+                    double audioLengthMs = (numFrames * frameSize * 1000.0) / 16000.0;
+                    double realTimeFactor = audioLengthMs / totalStopwatch.Elapsed.TotalMilliseconds;
+
                     if (activeFrames > 0)
                     {
                         double avgEchoPower = totalEchoPower / activeFrames;
@@ -158,6 +186,9 @@ namespace AecTestConsole
                         Console.WriteLine($"  Far-End Gain: 25% (very scaled)");
                         Console.WriteLine($"  Echo Level: 12.5% of max amplitude");
                         Console.WriteLine($"  ERLE: {erle:F2} dB");
+
+                        Console.WriteLine($"  Processing Time: {avgProcessingTimeMs:F3} ms/frame");
+                        Console.WriteLine($"  Real-Time Factor: {realTimeFactor:F2}x");
 
                         if (erle > 8.0)
                             Console.WriteLine($"  ✓ PASSED (ERLE > 8 dB with very scaled far-end)");
@@ -181,6 +212,8 @@ namespace AecTestConsole
             }
 
             Console.WriteLine($"\nTest: {Path.GetFileName(filePath)} - {farEndGain * 100:F0}% Far-End Gain");
+            var totalStopwatch = Stopwatch.StartNew();
+            long totalProcessingTicks = 0;
             try
             {
                 byte[] fileBytes = File.ReadAllBytes(filePath);
@@ -233,7 +266,10 @@ namespace AecTestConsole
                             Array.Clear(nearEnd, 0, frameSize);
                         }
 
+                        var frameStopwatch = Stopwatch.StartNew();
                         aec.Process(nearEnd, farEnd, output);
+                        frameStopwatch.Stop();
+                        totalProcessingTicks += frameStopwatch.ElapsedTicks;
 
                         nearEndBuffer.AddRange(nearEnd);
                         processedBuffer.AddRange(output);
@@ -254,6 +290,11 @@ namespace AecTestConsole
                         }
                     }
 
+                    totalStopwatch.Stop();
+                    double avgProcessingTimeMs = (totalProcessingTicks * 1000.0) / (Stopwatch.Frequency * numFrames);
+                    double audioLengthMs = (numFrames * frameSize * 1000.0) / sampleRate;
+                    double realTimeFactor = audioLengthMs / totalStopwatch.Elapsed.TotalMilliseconds;
+
                     if (activeFrames > 10)
                     {
                         double avgNearPower = totalNearPower / activeFrames;
@@ -262,6 +303,9 @@ namespace AecTestConsole
 
                         Console.WriteLine($"  Far-End Gain: {farEndGain * 100:F0}%");
                         Console.WriteLine($"  ERLE: {erle:F2} dB (measured over {activeFrames} active frames)");
+
+                        Console.WriteLine($"  Processing Time: {avgProcessingTimeMs:F3} ms/frame ({totalStopwatch.Elapsed.TotalMilliseconds:F1} ms total)");
+                        Console.WriteLine($"  Real-Time Factor: {realTimeFactor:F2}x (audio length: {audioLengthMs:F1} ms)");
 
                         if (erle > 10.0)
                             Console.WriteLine($"  ✓ PASSED (ERLE > 10 dB)");
@@ -290,7 +334,173 @@ namespace AecTestConsole
                 Console.WriteLine($"  ✗ FAILED: {ex.Message}");
             }
         }
+        private static void TestSuddenEchoOnset(string filePath, int sampleRate)
+        {
+            if (!File.Exists(filePath))
+            {
+                Console.WriteLine($"\n{Path.GetFileName(filePath)}: File not found (skipping sudden echo test)");
+                return;
+            }
 
+            Console.WriteLine($"\nTest: {Path.GetFileName(filePath)} - Sudden Echo Onset/Offset");
+            var totalStopwatch = Stopwatch.StartNew();
+            long totalProcessingTicks = 0;
+            try
+            {
+                byte[] fileBytes = File.ReadAllBytes(filePath);
+                short[] audioSamples = BytesToShorts(fileBytes);
+
+                int frameSize = 128;
+                using (var aec = AecFactory.CreateMdf(sampleRate))
+                {
+                    int numFrames = Math.Min(audioSamples.Length / frameSize, 400);
+
+                    if (numFrames < 100)
+                    {
+                        Console.WriteLine($"  ⚠ Audio file too short");
+                        return;
+                    }
+
+                    short[] farEnd = new short[frameSize];
+                    short[] nearEnd = new short[frameSize];
+                    short[] output = new short[frameSize];
+
+                    // Split test into three phases
+                    int phase1End = numFrames / 3;      // First third: silence
+                    int phase2End = 2 * numFrames / 3;  // Second third: echo present
+                    // Final third: silence again
+
+                    double totalNearPower = 0;
+                    double totalOutputPower = 0;
+                    int activeFrames = 0;
+
+                    var nearEndBuffer = new List<short>();
+                    var farEndBuffer = new List<short>();
+                    var processedBuffer = new List<short>();
+
+                    int delayFrames = 2;
+
+                    for (int frame = 0; frame < numFrames; frame++)
+                    {
+                        int offset = frame * frameSize;
+
+                        // Phase 1: No far-end (silence) - tests baseline
+                        if (frame < phase1End)
+                        {
+                            Array.Clear(farEnd, 0, frameSize);
+                            Array.Clear(nearEnd, 0, frameSize);
+                        }
+                        // Phase 2: Echo present - tests adaptation to sudden echo
+                        else if (frame < phase2End)
+                        {
+                            // Far-end from audio file
+                            for (int i = 0; i < frameSize; i++)
+                            {
+                                if (offset + i < audioSamples.Length)
+                                    farEnd[i] = audioSamples[offset + i];
+                                else
+                                    farEnd[i] = 0;
+                            }
+
+                            // Near-end has delayed echo (40% of far-end)
+                            if (frame >= phase1End + delayFrames)
+                            {
+                                int echoOffset = (frame - delayFrames) * frameSize;
+                                for (int i = 0; i < frameSize; i++)
+                                {
+                                    if (echoOffset + i < audioSamples.Length)
+                                        nearEnd[i] = (short)(audioSamples[echoOffset + i] * 0.4);
+                                    else
+                                        nearEnd[i] = 0;
+                                }
+                            }
+                            else
+                            {
+                                Array.Clear(nearEnd, 0, frameSize);
+                            }
+                        }
+                        // Phase 3: Return to silence - tests adaptation to echo removal
+                        else
+                        {
+                            Array.Clear(farEnd, 0, frameSize);
+                            Array.Clear(nearEnd, 0, frameSize);
+                        }
+
+                        var frameStopwatch = Stopwatch.StartNew();
+                        aec.Process(nearEnd, farEnd, output);
+                        frameStopwatch.Stop();
+                        totalProcessingTicks += frameStopwatch.ElapsedTicks;
+
+                        nearEndBuffer.AddRange(nearEnd);
+                        farEndBuffer.AddRange(farEnd);
+                        processedBuffer.AddRange(output);
+
+                        // Measure ERLE during phase 2 after adaptation period
+                        if (frame >= phase1End + 30 && frame < phase2End - 10)
+                        {
+                            double nearPower = ComputePower(nearEnd);
+                            double outPower = ComputePower(output);
+
+                            if (nearPower > 1e6)
+                            {
+                                totalNearPower += nearPower;
+                                totalOutputPower += outPower;
+                                activeFrames++;
+                            }
+                        }
+                    }
+
+                    totalStopwatch.Stop();
+                    double avgProcessingTimeMs = (totalProcessingTicks * 1000.0) / (Stopwatch.Frequency * numFrames);
+                    double audioLengthMs = (numFrames * frameSize * 1000.0) / sampleRate;
+                    double realTimeFactor = audioLengthMs / totalStopwatch.Elapsed.TotalMilliseconds;
+
+                    Console.WriteLine($"  Test Structure:");
+                    Console.WriteLine($"    Frames 0-{phase1End}: Silence (no echo)");
+                    Console.WriteLine($"    Frames {phase1End}-{phase2End}: Echo present (40% delayed far-end)");
+                    Console.WriteLine($"    Frames {phase2End}-{numFrames}: Silence again");
+
+                    if (activeFrames > 10)
+                    {
+                        double avgNearPower = totalNearPower / activeFrames;
+                        double avgOutputPower = totalOutputPower / activeFrames;
+                        double erle = 10.0 * Math.Log10(avgNearPower / Math.Max(avgOutputPower, 1e-10));
+
+                        Console.WriteLine($"  ERLE (during echo phase): {erle:F2} dB (measured over {activeFrames} active frames)");
+
+                        if (erle > 15.0)
+                            Console.WriteLine($"  ✓ PASSED (ERLE > 15 dB, good adaptation)");
+                        else if (erle > 10.0)
+                            Console.WriteLine($"  ⚠ Moderate performance (ERLE 10-15 dB)");
+                        else
+                            Console.WriteLine($"  ⚠ Lower than target (>15 dB)");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"  ⚠ Not enough active frames to measure ERLE");
+                    }
+
+                    Console.WriteLine($"  Processing Time: {avgProcessingTimeMs:F3} ms/frame ({totalStopwatch.Elapsed.TotalMilliseconds:F1} ms total)");
+                    Console.WriteLine($"  Real-Time Factor: {realTimeFactor:F2}x (audio length: {audioLengthMs:F1} ms)");
+
+                    // Save output files
+                    string baseName = Path.GetFileNameWithoutExtension(filePath);
+                    string nearEndFile = $"{baseName}_sudden_nearend.wav";
+                    string farEndFile = $"{baseName}_sudden_farend.wav";
+                    string processedFile = $"{baseName}_sudden_processed.wav";
+
+                    SaveWavFile(nearEndFile, nearEndBuffer.ToArray(), sampleRate);
+                    SaveWavFile(farEndFile, farEndBuffer.ToArray(), sampleRate);
+                    SaveWavFile(processedFile, processedBuffer.ToArray(), sampleRate);
+
+                    Console.WriteLine($"  Saved: {nearEndFile}, {farEndFile}, {processedFile}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  ✗ FAILED: {ex.Message}");
+            }
+        }
         private static short[] BytesToShorts(byte[] input)
         {
             short[] processedValues = new short[input.Length / 2];

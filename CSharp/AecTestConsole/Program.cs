@@ -1,6 +1,7 @@
 /* Simple test program for AEC functionality */
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Concentus;
@@ -165,6 +166,8 @@ namespace AecTestConsole
             }
 
             Console.WriteLine($"\n{Path.GetFileName(filePath)}: Testing echo cancellation...");
+            var totalStopwatch = Stopwatch.StartNew();
+            long totalProcessingTicks = 0;
             try
             {
                 byte[] fileBytes = File.ReadAllBytes(filePath);
@@ -215,7 +218,10 @@ namespace AecTestConsole
                             Array.Clear(nearEnd, 0, frameSize);
                         }
 
+                        var frameStopwatch = Stopwatch.StartNew();
                         aec.Process(nearEnd, farEnd, output);
+                        frameStopwatch.Stop();
+                        totalProcessingTicks += frameStopwatch.ElapsedTicks;
 
                         // Save audio for output files
                         nearEndBuffer.AddRange(nearEnd);
@@ -236,6 +242,11 @@ namespace AecTestConsole
                         }
                     }
 
+                    totalStopwatch.Stop();
+                    double avgProcessingTimeMs = (totalProcessingTicks * 1000.0) / (Stopwatch.Frequency * numFrames);
+                    double audioLengthMs = (numFrames * frameSize * 1000.0) / sampleRate;
+                    double realTimeFactor = audioLengthMs / totalStopwatch.Elapsed.TotalMilliseconds;
+
                     if (activeFrames > 0)
                     {
                         double avgNearPower = totalNearPower / activeFrames;
@@ -253,6 +264,9 @@ namespace AecTestConsole
                     {
                         Console.WriteLine($"  ⚠ Not enough active frames to measure (processed {numFrames} frames)");
                     }
+                    
+                    Console.WriteLine($"  Processing Time: {avgProcessingTimeMs:F3} ms/frame ({totalStopwatch.Elapsed.TotalMilliseconds:F1} ms total)");
+                    Console.WriteLine($"  Real-Time Factor: {realTimeFactor:F2}x (audio length: {audioLengthMs:F1} ms)");
 
                     // Save output WAV files
                     string baseName = Path.GetFileNameWithoutExtension(filePath);
