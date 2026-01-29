@@ -63,6 +63,22 @@ namespace Concentus.Celt
         internal const float MIN_POWER = 1e-10f;      // Minimum power to avoid division by zero
         internal const int MIN_POWER_Q15 = 1;         // Minimum power in fixed-point
 
+        // Double-talk detection (Geigel algorithm)
+        internal const float DTD_THRESHOLD = 0.5f;      // Near/far ratio threshold
+        internal const int DTD_HANGOVER_FRAMES = 25;    // Hold DTD state for 25 frames (~50ms at 16kHz/128 frame)
+        internal const int DTD_HISTORY_LENGTH = 32;     // Far-end peak history size
+        internal const int DTD_MIN_FAR_PEAK = 100;      // Minimum far-end peak to consider for DTD
+
+        // Background filter parameters
+        internal const float BACKGROUND_STEP_SIZE = 0.7f;  // Larger step size for background filter
+        internal const float DIVERGENCE_SMOOTH = 0.9f;     // Smoothing factor for divergence metrics
+        internal const float SWAP_THRESHOLD = 0.8f;        // Swap if Davg2 < 0.8 * Davg1
+        internal const int SWAP_COUNT_THRESHOLD = 5;       // Frames before swapping filters
+
+        // Divergence detection
+        internal const int MAX_SCREWED_UP = 10;            // Reset after 10 diverged frames
+        internal const float MAX_FILTER_ENERGY = 1e8f;     // Maximum filter coefficient energy
+
         /// <summary>
         /// Generate half-Hanning window for overlap-add processing
         /// </summary>

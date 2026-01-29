@@ -455,6 +455,58 @@ namespace Concentus.Celt
         }
 
         /// <summary>
+        /// Forward FFT without Opus scaling (for MDF echo cancellation)
+        /// Unlike opus_fft, this does not pre-scale the input by 1/N
+        /// </summary>
+        internal static void opus_fft_unscaled(FFTState st, int[] fin, int[] fout)
+        {
+            int i;
+            Inlines.OpusAssert(fin != fout, "In-place FFT not supported");
+
+            /* Bit-reverse the input WITHOUT scaling */
+            for (i = 0; i < st.nfft; i++)
+            {
+                fout[2 * st.bitrev[i]] = fin[2 * i];
+                fout[2 * st.bitrev[i] + 1] = fin[2 * i + 1];
+            }
+
+            opus_fft_impl(st, fout, 0);
+        }
+
+        /// <summary>
+        /// Inverse FFT without Opus scaling semantics (for MDF echo cancellation)
+        /// Applies 1/N scaling at the output for proper normalization
+        /// </summary>
+        internal static void opus_ifft_unscaled(FFTState st, int[] fin, int[] fout)
+        {
+            int i;
+            Inlines.OpusAssert(fin != fout, "In-place iFFT not supported");
+
+            /* Bit-reverse the input without scaling */
+            for (i = 0; i < st.nfft; i++)
+            {
+                fout[2 * st.bitrev[i]] = fin[2 * i];
+                fout[2 * st.bitrev[i] + 1] = fin[2 * i + 1];
+            }
+
+            /* Negate imaginary part for inverse FFT */
+            for (i = 1; i < st.nfft * 2; i += 2)
+            {
+                fout[i] = -fout[i];
+            }
+
+            opus_fft_impl(st, fout, 0);
+
+            /* Negate imaginary part and apply 1/N scaling */
+            int scale = st.nfft;
+            for (i = 0; i < st.nfft; i++)
+            {
+                fout[2 * i] = fout[2 * i] / scale;
+                fout[2 * i + 1] = -fout[2 * i + 1] / scale;
+            }
+        }
+
+        /// <summary>
         /// Compute power spectrum: ps[i] = real[i]^2 + imag[i]^2
         /// </summary>
         /// <param name="X">Complex FFT output (interleaved real/imag)</param>

@@ -106,5 +106,15 @@ namespace Concentus.Celt
 
         // Statistics
         internal long frame_count;      // Number of frames processed
+
+        // Double-talk detection state
+        internal int dtd_hangover;         // Frames remaining in DTD holdover
+        internal int[] far_peak_history;   // Circular buffer of far-end peaks
+        internal int far_peak_idx;         // Current index in peak history
+        internal bool dtd_active;          // True if double-talk detected
+
+        // Divergence monitoring
+        internal float prev_filter_energy; // Previous frame's filter energy (for growth detection)
+        internal int swap_count;           // Frames where background outperforms foreground
     }
 }
