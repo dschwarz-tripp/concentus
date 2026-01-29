@@ -264,7 +264,7 @@ namespace AecTestConsole
                     {
                         Console.WriteLine($"  ⚠ Not enough active frames to measure (processed {numFrames} frames)");
                     }
-                    
+
                     Console.WriteLine($"  Processing Time: {avgProcessingTimeMs:F3} ms/frame ({totalStopwatch.Elapsed.TotalMilliseconds:F1} ms total)");
                     Console.WriteLine($"  Real-Time Factor: {realTimeFactor:F2}x (audio length: {audioLengthMs:F1} ms)");
 
