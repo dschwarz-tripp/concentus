@@ -151,6 +151,9 @@ namespace AecTestConsole
 
             // Test near-end speech preservation (no echo scenario)
             TestNearEndOnly.Run();
+
+            // Test scaled far-end scenarios (distant speaker)
+            TestScaledFarEnd.Run();
         }
 
         static void TestRealAudioFile(string filePath, int sampleRate, int channels = 1)
