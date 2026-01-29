@@ -32,9 +32,10 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-namespace Concentus.EchoCancellation
+namespace Concentus.Common
 {
     using System;
+    using Concentus.Celt;
 
     /// <summary>
     /// MDF (Multi-Delay Filter) acoustic echo canceller with residual echo suppression
@@ -53,7 +54,7 @@ namespace Concentus.EchoCancellation
         /// <param name="filterLength">Filter length in samples (echo tail) - must be multiple of frameSize</param>
         public SpeexEchoCanceller(int sampleRate, int frameSize, int filterLength)
         {
-            _state = Mdf.Init(sampleRate, frameSize, filterLength);
+            _state = Mdf.init(sampleRate, frameSize, filterLength);
         }
 
         /// <summary>
@@ -82,7 +83,7 @@ namespace Concentus.EchoCancellation
             if (_disposed)
                 throw new ObjectDisposedException(nameof(SpeexEchoCanceller));
 
-            Mdf.ProcessFrame(_state, farEnd, nearEnd, output);
+            Mdf.process_frame(_state, farEnd, nearEnd, output);
         }
 
         /// <summary>
@@ -93,7 +94,7 @@ namespace Concentus.EchoCancellation
             if (_disposed)
                 throw new ObjectDisposedException(nameof(SpeexEchoCanceller));
 
-            Mdf.Reset(_state);
+            Mdf.reset(_state);
         }
 
         /// <summary>

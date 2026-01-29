@@ -32,7 +32,7 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-namespace Concentus.EchoCancellation
+namespace Concentus.Celt
 {
     using System;
 
@@ -68,7 +68,7 @@ namespace Concentus.EchoCancellation
         /// </summary>
         /// <param name="size">Window size (typically frame_size)</param>
         /// <returns>Window coefficients in Q15 format</returns>
-        internal static short[] GenerateWindow(int size)
+        internal static short[] generate_window(int size)
         {
             short[] window = new short[size];
             for (int i = 0; i < size; i++)
@@ -86,7 +86,7 @@ namespace Concentus.EchoCancellation
         /// </summary>
         /// <param name="fftSize">FFT size</param>
         /// <returns>Scaling factor in Q15</returns>
-        internal static short GetFftScale(int fftSize)
+        internal static short get_fft_scale(int fftSize)
         {
             // Normalize by sqrt(fftSize) for proper power scaling
             double scale = 1.0 / Math.Sqrt(fftSize);

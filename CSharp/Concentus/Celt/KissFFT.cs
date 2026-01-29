@@ -479,7 +479,7 @@ namespace Concentus.Celt
         /// </summary>
         /// <param name="size">FFT size (must be power of 2: 64, 128, 256, 512, 1024)</param>
         /// <returns>FFT state structure</returns>
-        internal static FFTState CreateFftState(int size)
+        internal static FFTState create_fft_state(int size)
         {
             if (size != 64 && size != 128 && size != 256 && size != 512 && size != 1024)
                 throw new ArgumentException("FFT size must be power of 2 between 64 and 1024", nameof(size));

@@ -3,7 +3,7 @@
 using System;
 using System.IO;
 using System.Linq;
-using Concentus;
+using Concentus.Common;
 
 namespace AecTestConsole
 {

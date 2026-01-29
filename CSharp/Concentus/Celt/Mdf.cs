@@ -32,10 +32,8 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-namespace Concentus.EchoCancellation
+namespace Concentus.Celt
 {
-    using Concentus.Celt;
-    using Concentus.Celt.Structs;
     using Concentus.Common;
     using System;
 
@@ -48,7 +46,7 @@ namespace Concentus.EchoCancellation
         /// <summary>
         /// DC notch filter to remove DC offset (second-order IIR highpass)
         /// </summary>
-        internal static void FilterDcNotch16(Span<short> input, int radius, Span<int> mem, int mem_ptr, int len)
+        internal static void filter_dc_notch_16(Span<short> input, int radius, Span<int> mem, int mem_ptr, int len)
         {
             int i;
             int den2 = Inlines.MULT16_16_Q15(radius, radius);
@@ -67,17 +65,9 @@ namespace Concentus.EchoCancellation
         }
 
         /// <summary>
-        /// Compute power spectrum from frequency-domain signal
-        /// </summary>
-        internal static void PowerSpectrum(Span<int> X, Span<int> ps, int N)
-        {
-            KissFFT.power_spectrum(X, ps, N);
-        }
-
-        /// <summary>
         /// Spectral multiplication: Y[i] = X[i] * H[i] (complex multiplication)
         /// </summary>
-        internal static void SpectralMul(Span<int> X, Span<int> Y, Span<int> prod, int N)
+        internal static void spectral_mul(Span<int> X, Span<int> Y, Span<int> prod, int N)
         {
             int i;
             prod[0] = Inlines.MULT16_32_Q15(X[0], Y[0]);
@@ -94,7 +84,7 @@ namespace Concentus.EchoCancellation
         /// <summary>
         /// Weighted power spectrum: ps[i] = weight * X[i]^2
         /// </summary>
-        internal static void WeightedSpectralMul(int w, Span<int> X, Span<int> Y, Span<int> prod, int N)
+        internal static void weighed_spectral_mul(int w, Span<int> X, Span<int> Y, Span<int> prod, int N)
         {
             int i;
             prod[0] = Inlines.MULT16_32_Q15(w, Inlines.MULT16_32_Q15(X[0], Y[0]));
@@ -111,7 +101,7 @@ namespace Concentus.EchoCancellation
         /// <summary>
         /// Compute proportionate weights for NLMS adaptation
         /// </summary>
-        internal static void MdfAdjustProp(Span<int> W, int N, int M, Span<int> prop)
+        internal static void mdf_adjust_prop(Span<int> W, int N, int M, Span<int> prop)
         {
             int i, j;
             int max_sum = 1;
@@ -166,7 +156,7 @@ namespace Concentus.EchoCancellation
         /// <summary>
         /// Initialize MDF state
         /// </summary>
-        internal static MdfState Init(int sampleRate, int frameSize, int filterLength)
+        internal static MdfState init(int sampleRate, int frameSize, int filterLength)
         {
             // Validate parameters
             if (sampleRate != 8000 && sampleRate != 16000 && sampleRate != 24000 && sampleRate != 48000)
@@ -186,10 +176,10 @@ namespace Concentus.EchoCancellation
             st.fft_size = 2 * frameSize;
 
             // Create FFT state
-            st.fft_table = KissFFT.CreateFftState(st.fft_size);
+            st.fft_table = KissFFT.create_fft_state(st.fft_size);
 
             // Generate analysis window
-            st.window = MdfTables.GenerateWindow(frameSize);
+            st.window = MdfTables.generate_window(frameSize);
 
             // Allocate buffers
             int N = st.fft_size / 2 + 1;  // Number of frequency bins
@@ -244,7 +234,7 @@ namespace Concentus.EchoCancellation
         /// <summary>
         /// Reset filter state
         /// </summary>
-        internal static void Reset(MdfState st)
+        internal static void reset(MdfState st)
         {
             int N = st.fft_size / 2 + 1;
 
@@ -281,7 +271,7 @@ namespace Concentus.EchoCancellation
         /// <summary>
         /// Process one frame of echo cancellation
         /// </summary>
-        internal static void ProcessFrame(MdfState st, ReadOnlySpan<short> farEnd, ReadOnlySpan<short> nearEnd, Span<short> output)
+        internal static void process_frame(MdfState st, ReadOnlySpan<short> farEnd, ReadOnlySpan<short> nearEnd, Span<short> output)
         {
             int i, j;
             int N = st.fft_size / 2 + 1;
@@ -317,8 +307,8 @@ namespace Concentus.EchoCancellation
             farEnd.Slice(0, frameSize).CopyTo(farEndFiltered);
             nearEnd.Slice(0, frameSize).CopyTo(nearEndFiltered);
 
-            FilterDcNotch16(farEndFiltered, MdfTables.NOTCH_RADIUS_Q15, st.notch_mem, 0, frameSize);
-            FilterDcNotch16(nearEndFiltered, MdfTables.NOTCH_RADIUS_Q15, st.notch_mem, 0, frameSize);
+            filter_dc_notch_16(farEndFiltered, MdfTables.NOTCH_RADIUS_Q15, st.notch_mem, 0, frameSize);
+            filter_dc_notch_16(nearEndFiltered, MdfTables.NOTCH_RADIUS_Q15, st.notch_mem, 0, frameSize);
 
             // Store far-end in ring buffer
             int writePos = st.x_insert_pos;
@@ -365,7 +355,7 @@ namespace Concentus.EchoCancellation
                 // Multiply by filter weights and accumulate
                 int wOffset = j * N * 2;
                 Span<int> wBlock = st.W.AsSpan(wOffset, N * 2);
-                SpectralMul(st.X.AsSpan(), wBlock, phiTmp, N);
+                spectral_mul(st.X.AsSpan(), wBlock, phiTmp, N);
 
                 // Accumulate to PHI
                 for (i = 0; i < st.fft_size; i++)
@@ -403,7 +393,7 @@ namespace Concentus.EchoCancellation
                 st.last_y[i] = phiTime[2 * i]; // Take real part only
 
             // Compute and apply residual echo suppression
-            ApplyResidualEchoSuppression(st);
+            apply_residual_echo_suppression(st);
 
             // Extract output with suppression (scale back from Q23 to Q0)
             for (i = 0; i < frameSize; i++)
@@ -413,7 +403,7 @@ namespace Concentus.EchoCancellation
             }
 
             // Update filter weights (NLMS adaptation)
-            UpdateWeights(st);
+            update_weights(st);
 
             st.frame_count++;
         }
@@ -421,7 +411,7 @@ namespace Concentus.EchoCancellation
         /// <summary>
         /// Compute and apply residual echo suppression gain
         /// </summary>
-        private static void ApplyResidualEchoSuppression(MdfState st)
+        private static void apply_residual_echo_suppression(MdfState st)
         {
             int i;
             int N = st.fft_size / 2 + 1;
@@ -444,7 +434,7 @@ namespace Concentus.EchoCancellation
             KissFFT.opus_fft(st.fft_table, yWindowed.ToArray(), ySpectrum);
 
             // Compute residual echo power spectrum
-            PowerSpectrum(ySpectrum.AsSpan(), st.residual_echo.AsSpan(), N);
+            KissFFT.power_spectrum(ySpectrum.AsSpan(), st.residual_echo.AsSpan(), N);
 
             // Scale by leak estimate (accounts for echo path uncertainty)
             float leak2 = 2.0f * st.leak_estimate;
@@ -462,7 +452,7 @@ namespace Concentus.EchoCancellation
             }
 
             // Compute error signal power spectrum
-            PowerSpectrum(st.E.AsSpan(), st.Eh.AsSpan(), N);
+            KissFFT.power_spectrum(st.E.AsSpan(), st.Eh.AsSpan(), N);
 
             // Compute suppression gain using Wiener-like filter
             for (i = 0; i < N; i++)
@@ -483,14 +473,14 @@ namespace Concentus.EchoCancellation
         /// <summary>
         /// Update adaptive filter weights using NLMS algorithm
         /// </summary>
-        private static void UpdateWeights(MdfState st)
+        private static void update_weights(MdfState st)
         {
             int i, j;
             int N = st.fft_size / 2 + 1;
             int M = st.nb_blocks;
 
             // Compute power spectrum of far-end
-            PowerSpectrum(st.X.AsSpan(), st.power.AsSpan(), N);
+            KissFFT.power_spectrum(st.X.AsSpan(), st.power.AsSpan(), N);
 
             // Smooth power estimate
             for (i = 0; i < N; i++)
@@ -506,7 +496,7 @@ namespace Concentus.EchoCancellation
                 totalPower = Inlines.ADD32(totalPower, st.power[i]);
 
             // Update proportionate weights
-            MdfAdjustProp(st.W.AsSpan(), N, M, st.prop.AsSpan());
+            mdf_adjust_prop(st.W.AsSpan(), N, M, st.prop.AsSpan());
 
             // Adaptation step
             int mu = (short)(0.5f * 32767); // Step size

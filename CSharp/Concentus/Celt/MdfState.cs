@@ -32,9 +32,8 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-namespace Concentus.EchoCancellation
+namespace Concentus.Celt
 {
-    using Concentus.Celt.Structs;
     using System;
 
     /// <summary>
@@ -49,7 +48,7 @@ namespace Concentus.EchoCancellation
         internal int nb_blocks;         // Number of filter blocks (filter_length / frame_size)
 
         // FFT state
-        internal FFTState fft_table;    // FFT state for 2*frame_size
+        internal Structs.FFTState fft_table;    // FFT state for 2*frame_size
         internal int fft_size;          // FFT size (2*frame_size)
         internal short[] window;        // Analysis window (frame_size samples, Q15)
 
