@@ -527,6 +527,27 @@ namespace Concentus.Celt
         }
 
         /// <summary>
+        /// Compute power spectrum for unscaled FFT output: ps[i] = real[i]^2 + imag[i]^2
+        /// Uses 12-bit shift to handle unscaled FFT magnitude (shift_original + log2(N)/2 = 8 + 4)
+        /// </summary>
+        /// <param name="X">Complex FFT output (interleaved real/imag)</param>
+        /// <param name="ps">Power spectrum output</param>
+        /// <param name="N">FFT size (number of frequency bins)</param>
+        internal static void power_spectrum_unscaled(Span<int> X, Span<int> ps, int N)
+        {
+            int i;
+            ps[0] = Inlines.MULT16_16(Inlines.EXTRACT16(Inlines.SHR32(X[0], 12)), Inlines.EXTRACT16(Inlines.SHR32(X[0], 12)));
+            for (i = 1; i < N - 1; i++)
+            {
+                int re = Inlines.EXTRACT16(Inlines.SHR32(X[2 * i], 12));
+                int im = Inlines.EXTRACT16(Inlines.SHR32(X[2 * i + 1], 12));
+                ps[i] = Inlines.MULT16_16(re, re) + Inlines.MULT16_16(im, im);
+            }
+            ps[N - 1] = Inlines.MULT16_16(Inlines.EXTRACT16(Inlines.SHR32(X[2 * (N - 1)], 12)),
+                                           Inlines.EXTRACT16(Inlines.SHR32(X[2 * (N - 1)], 12)));
+        }
+
+        /// <summary>
         /// Create FFT state for power-of-2 sizes (for MDF echo cancellation)
         /// </summary>
         /// <param name="size">FFT size (must be power of 2: 64, 128, 256, 512, 1024)</param>
