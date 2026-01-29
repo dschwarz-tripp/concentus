@@ -34,7 +34,7 @@
 
 namespace Concentus
 {
-    using Concentus.EchoCancellation;
+    using Concentus.Common;
     using System;
 
     /// <summary>
